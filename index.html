@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marshmallow Masterclass: Badges</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --dark: #1e293b;
+            --accent: #f97316;
+            --blue: #0ea5e9;
+            --success: #10b981;
+            --gold: #fbbf24;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        #game-board {
+            background: white;
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 900px;
+            width: 100%;
+            position: relative;
+        }
+
+        /* Top Bar: Streaks & Badges */
+        .top-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #f1f5f9;
+            padding: 15px 25px;
+            border-radius: 50px;
+        }
+
+        .streak-counter { font-size: 20px; font-weight: bold; color: var(--accent); }
+        .badge-case { display: flex; gap: 10px; font-size: 24px; }
+        .badge { opacity: 0.2; filter: grayscale(1); transition: 0.5s; }
+        .badge.unlocked { opacity: 1; filter: grayscale(0); transform: scale(1.2); }
+
+        /* Modal Overlays */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active { visibility: visible; opacity: 1; }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+
+        .modal-overlay.active .modal-content { transform: scale(1); }
+        .modal-title { font-size: 32px; font-weight: bold; margin-bottom: 15px; color: var(--accent); }
+        .modal-text { font-size: 18px; line-height: 1.6; color: #475569; margin-bottom: 30px; }
+        .emoji-huge { font-size: 80px; margin: 10px 0; }
+
+        /* Clues & UI */
+        .clue-container { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 15px; margin-bottom: 20px; }
+        .clue-box { background: #fff7ed; padding: 15px; border-radius: 16px; border: 1px solid #ffedd5; text-align: center; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; background: white; }
+        th, td { border: 1px solid #fed7aa; padding: 4px; text-align: center; }
+
+        #chart-wrapper {
+            position: relative; height: 380px; width: 100%;
+            background: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px;
+            margin-bottom: 20px; padding: 10px;
+        }
+
+        .sliders {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+            background: #f1f5f9; padding: 20px; border-radius: 16px;
+        }
+
+        .slider-group { display: flex; flex-direction: column; align-items: center; font-weight: bold;}
+        input[type=range] { width: 100%; margin: 10px 0; cursor: pointer; accent-color: var(--accent); }
+        .val { font-size: 22px; color: var(--accent); }
+
+        .btn {
+            background: var(--accent); color: white; border: none;
+            padding: 18px 45px; border-radius: 50px; font-size: 22px;
+            font-weight: bold; cursor: pointer; margin-top: 10px;
+            box-shadow: 0 6px 0 #ea580c; transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #ea580c; }
+    </style>
+</head>
+<body>
+
+    <div id="welcome-modal" class="modal-overlay active">
+        <div class="modal-content">
+            <div class="emoji-huge">🏕️🔥🍢</div>
+            <div class="modal-title">Master Roaster Challenge</div>
+            <div class="modal-text">
+                Roast perfect marshmallows to build a <strong>Win Streak</strong> and unlock <strong>Badges</strong>!<br><br>
+                Can you unlock the legendary <strong>Galaxy Mallow</strong> by getting 10 in a row?
+            </div>
+            <button class="btn" onclick="closeWelcome()">Grab a Stick!</button>
+        </div>
+    </div>
+
+    <div id="results-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div id="result-emoji" class="emoji-huge">🌟</div>
+            <div id="result-title" class="modal-title">Perfect Roast!</div>
+            <div id="result-text" class="modal-text">You nailed all 3 targets!</div>
+            <div id="badge-unlock-note" style="color: var(--gold); font-weight: bold; margin-bottom: 20px; display: none;">🏆 NEW BADGE UNLOCKED!</div>
+            <button class="btn" onclick="startNewRound()" style="background: var(--success); box-shadow: 0 6px 0 #059669;">Next Roast 🍢</button>
+        </div>
+    </div>
+
+    <div id="game-board">
+        <div class="top-stats">
+            <div class="streak-counter" id="streak-ui">🔥 Streak: 0</div>
+            <div class="badge-case">
+                <span class="badge" id="badge-1" title="Get a 3-Win Streak">🥉</span>
+                <span class="badge" id="badge-2" title="Get a 5-Win Streak">🥈</span>
+                <span class="badge" id="badge-3" title="Get a 10-Win Streak">🥇</span>
+                <span class="badge" id="badge-4" title="Unlock the Master Roaster">👑</span>
+            </div>
+        </div>
+
+        <div class="clue-container">
+            <div class="clue-box">
+                <div>Standard Recipe</div>
+                <div id="eq-std" style="color:var(--accent); font-weight:bold; font-size:20px; margin-top:5px;"></div>
+            </div>
+            <div class="clue-box">
+                <div>Factored Recipe</div>
+                <div id="eq-fac" style="color:var(--blue); font-weight:bold; font-size:20px; margin-top:5px;"></div>
+            </div>
+            <div class="clue-box">
+                <div style="font-weight:bold;">Fire Log Table</div>
+                <table id="data-table">
+                    <tr id="row-x"><th>x</th></tr>
+                    <tr id="row-y"><th>y</th></tr>
+                </table>
+            </div>
+        </div>
+
+        <div id="chart-wrapper">
+            <canvas id="mathCanvas"></canvas>
+        </div>
+
+        <div class="sliders">
+            <div class="slider-group">
+                <label>Start (Y)</label>
+                <input type="range" id="sl-start" min="0" max="25" value="0">
+                <span class="val" id="val-start">0</span>
+            </div>
+            <div class="slider-group">
+                <label>Peak (X)</label>
+                <input type="range" id="sl-peak" min="0" max="10" step="0.5" value="0">
+                <span class="val" id="val-peak">0</span>
+            </div>
+            <div class="slider-group">
+                <label>Prank (X)</label>
+                <input type="range" id="sl-prank" min="0" max="12" step="0.5" value="0">
+                <span class="val" id="val-prank">0</span>
+            </div>
+        </div>
+
+        <center>
+            <button class="btn" id="btn-fire" onclick="evaluateRoast()">Light the Fire! 🔥</button>
+        </center>
+    </div>
+
+    <script>
+        let currentProblem = {};
+        let chartInstance = null;
+        let streak = 0;
+
+        const emojiPlugin = {
+            id: 'emojiPlugin',
+            afterDatasetsDraw(chart) {
+                const ctx = chart.ctx;
+                const emojis = ['☁️', '🫠', '🪨'];
+                for (let i = 0; i < 3; i++) {
+                    const meta = chart.getDatasetMeta(i);
+                    if (!meta.hidden && meta.data.length > 0) {
+                        const point = meta.data[0];
+                        ctx.font = '30px Arial';
+                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillText(emojis[i], point.x, point.y);
+                    }
+                }
+            }
+        };
+
+        function closeWelcome() {
+            document.getElementById('welcome-modal').classList.remove('active');
+            generateProblem();
+        }
+
+        function generateProblem() {
+            let r1, r2, h, k, yInt, b;
+            do {
+                r1 = -Math.floor(Math.random() * 4) - 1; 
+                r2 = Math.floor(Math.random() * 8) + 2;  
+                h = (r1 + r2) / 2; k = Math.pow(h - r1, 2); 
+                yInt = -1 * r1 * r2; b = r1 + r2; 
+            } while (k > 25 || yInt > 20 || yInt < 2 || r2 > 10);
+
+            currentProblem = { r1, r2, h, k, yInt };
+            
+            document.getElementById('eq-std').textContent = `y = -x² ${b >= 0 ? '+' : '-'} ${Math.abs(b)}x + ${yInt}`;
+            document.getElementById('eq-fac').textContent = `y = -(x + ${Math.abs(r1)})(x - ${r2})`;
+
+            const rx = document.getElementById('row-x');
+            const ry = document.getElementById('row-y');
+            rx.innerHTML = '<th>Time</th>'; ry.innerHTML = '<th>Squish</th>';
+            for(let i = 0; i <= r2; i++) {
+                rx.innerHTML += `<td>${i}</td>`;
+                ry.innerHTML += `<td>${-1 * (i - r1) * (i - r2)}</td>`;
+            }
+
+            initChart();
+            updateChartPoints();
+            document.getElementById('btn-fire').disabled = false;
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('mathCanvas').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'scatter',
+                plugins: [emojiPlugin],
+                data: {
+                    datasets: [
+                        { label: 'Start', data: [{x: 0, y: 0}], pointRadius: 0 },
+                        { label: 'Peak', data: [{x: 0, y: 0}], pointRadius: 0 },
+                        { label: 'Prank', data: [{x: 0, y: 0}], pointRadius: 0 },
+                        { label: 'Parabola', data: [], type: 'line', borderColor: '#f97316', borderWidth: 5, fill: false, tension: 0.4, pointRadius: 0 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: {
+                        x: { type: 'linear', min: 0, max: 11, title: { display: true, text: 'Time (x)' } },
+                        y: { type: 'linear', min: 0, max: 26, title: { display: true, text: 'Squishiness (y)' } }
+                    }
+                }
+            });
+        }
+
+        function updateChartPoints() {
+            const sy = parseFloat(document.getElementById('sl-start').value);
+            const px = parseFloat(document.getElementById('sl-peak').value);
+            const rx = parseFloat(document.getElementById('sl-prank').value);
+            chartInstance.data.datasets[0].data[0] = { x: 0, y: sy };
+            chartInstance.data.datasets[1].data[0] = { x: px, y: currentProblem.k };
+            chartInstance.data.datasets[2].data[0] = { x: rx, y: 0 };
+            chartInstance.update();
+            document.getElementById('val-start').textContent = sy;
+            document.getElementById('val-peak').textContent = px;
+            document.getElementById('val-prank').textContent = rx;
+        }
+
+        function evaluateRoast() {
+            document.getElementById('btn-fire').disabled = true;
+            const userY = parseFloat(document.getElementById('sl-start').value);
+            const userHX = parseFloat(document.getElementById('sl-peak').value);
+            const userRX = parseFloat(document.getElementById('sl-prank').value);
+
+            let isPerfect = (userY === currentProblem.yInt && userHX === currentProblem.h && userRX === currentProblem.r2);
+
+            const curveData = [];
+            for(let x = 0; x <= currentProblem.r2 + 0.5; x += 0.1) {
+                curveData.push({ x: x, y: -1 * (x - currentProblem.r1) * (x - currentProblem.r2) });
+            }
+            chartInstance.data.datasets[3].data = curveData;
+            chartInstance.data.datasets[3].borderColor = isPerfect ? '#10b981' : '#ef4444';
+            chartInstance.update();
+
+            if (isPerfect) streak++; else streak = 0;
+            updateBadges();
+
+            setTimeout(() => showResults(isPerfect), 1500);
+        }
+
+        function updateBadges() {
+            document.getElementById('streak-ui').textContent = `🔥 Streak: ${streak}`;
+            let unlockedNow = false;
+            if (streak >= 3) if(!document.getElementById('badge-1').classList.contains('unlocked')) unlockedNow = true, document.getElementById('badge-1').classList.add('unlocked');
+            if (streak >= 5) if(!document.getElementById('badge-2').classList.contains('unlocked')) unlockedNow = true, document.getElementById('badge-2').classList.add('unlocked');
+            if (streak >= 10) if(!document.getElementById('badge-3').classList.contains('unlocked')) unlockedNow = true, document.getElementById('badge-3').classList.add('unlocked');
+            if (streak >= 15) if(!document.getElementById('badge-4').classList.contains('unlocked')) unlockedNow = true, document.getElementById('badge-4').classList.add('unlocked');
+            
+            document.getElementById('badge-unlock-note').style.display = unlockedNow ? 'block' : 'none';
+        }
+
+        function showResults(perfect) {
+            const title = document.getElementById('result-title');
+            const text = document.getElementById('result-text');
+            const emoji = document.getElementById('result-emoji');
+
+            if (perfect) {
+                emoji.textContent = '🌟🏆🍢';
+                title.textContent = "Perfect Roast!";
+                text.textContent = `You nailed it! Current Streak: ${streak}`;
+            } else {
+                emoji.textContent = '🔥💨🧯';
+                title.textContent = "Burnt!";
+                text.textContent = "The fire missed your targets. Streak Reset!";
+            }
+            document.getElementById('results-modal').classList.add('active');
+        }
+
+        function startNewRound() {
+            document.getElementById('results-modal').classList.remove('active');
+            setTimeout(generateProblem, 300);
+        }
+
+        ['sl-start', 'sl-peak', 'sl-prank'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateChartPoints);
+        });
+    </script>
+</body>
+</html>
