@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marshmallow Masterclass: Live Badges</title>
+    <title>Marshmallow Masterclass: Boss Fixed</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -19,15 +19,14 @@
 
         #main-layout {
             display: grid;
-            grid-template-columns: 220px 1fr 220px;
+            grid-template-columns: 240px 1fr 240px;
             gap: 15px;
-            max-width: 1300px;
+            max-width: 1400px;
             width: 100%;
         }
 
         @media (max-width: 1100px) {
             #main-layout { grid-template-columns: 1fr; }
-            #wishlist, #trophy-rack { position: static; }
         }
 
         /* Sidebars */
@@ -41,30 +40,22 @@
             margin-bottom: 12px; padding: 10px; border-radius: 15px;
             background: white; border-left: 6px solid var(--accent); font-size: 12px;
         }
-        .wish-item h4 { margin: 0 0 3px 0; font-size: 14px; }
 
-        /* 3D Badge Rack (Right Side) */
-        .badge-grid {
-            display: grid; grid-template-columns: 1fr; gap: 15px; perspective: 800px;
-        }
-
+        /* 3D Badge Rack */
+        .badge-grid { display: grid; grid-template-columns: 1fr; gap: 12px; perspective: 800px; }
         .mini-badge {
             background: #fff; padding: 10px; border-radius: 15px;
             display: flex; align-items: center; gap: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             transform: rotateY(-15deg); transition: 0.5s;
             filter: grayscale(1); opacity: 0.3; border: 2px solid #ddd;
+            cursor: help;
         }
-
         .mini-badge.unlocked {
             filter: grayscale(0); opacity: 1; border-color: var(--gold);
-            transform: rotateY(0deg); box-shadow: -5px 5px 15px rgba(245,158,11,0.3);
-            background: linear-gradient(135deg, #fff 0%, #fffbeb 100%);
+            transform: rotateY(0deg); background: linear-gradient(135deg, #fff 0%, #fffbeb 100%);
         }
-
         .mini-badge:hover { transform: scale(1.05) translateZ(20px); z-index: 10; }
-        .mini-badge .emoji { font-size: 24px; }
-        .mini-badge .label { font-size: 10px; font-weight: bold; line-height: 1.1; }
 
         /* Game Board */
         #game-board {
@@ -73,10 +64,12 @@
         }
 
         #chart-wrapper { height: 350px; background: white; border-radius: 20px; margin-bottom: 20px; border: 2px solid #e2e8f0; position: relative; overflow: hidden; }
+        .smoke-blur { filter: blur(15px) grayscale(0.9); }
+        .midnight-mode { filter: brightness(0.05); }
+
         .clue-container { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 10px; margin-bottom: 20px; }
-        .clue-box { background: #fef3c7; padding: 12px; border-radius: 20px; border: 1px solid #fde68a; overflow: hidden; font-size: 13px; }
+        .clue-box { background: #fef3c7; padding: 12px; border-radius: 20px; border: 1px solid #fde68a; font-size: 13px; }
         
-        .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 5px; background: white; }
         th, td { border: 1px solid #fed7aa; padding: 5px; text-align: center; }
 
@@ -95,13 +88,16 @@
 
         .btn { background: var(--accent); color: white; border: none; padding: 15px 40px; border-radius: 50px; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 6px 0 #ea580c; margin-top: 10px; }
         .btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #ea580c; }
-        .btn:disabled { background: #ccc; box-shadow: 0 6px 0 #999; cursor: not-allowed; }
-
-        .smoke-blur { filter: blur(15px) grayscale(0.9); }
-        .midnight-mode { filter: brightness(0.05); }
-        .feedback-item { margin-bottom: 10px; padding: 8px; border-radius: 10px; border-left: 5px solid #ccc; font-size: 14px; }
+        
+        .feedback-item { margin-bottom: 10px; padding: 10px; border-radius: 10px; border-left: 5px solid #ccc; font-size: 14px; }
         .perfect { border-color: var(--success); background: #ecfdf5; }
         .wrong { border-color: #ef4444; background: #fef2f2; }
+
+        #flashlight-btn {
+            position: absolute; top: 10px; right: 10px; z-index: 100;
+            background: #fbbf24; border: 2px solid #b45309; padding: 10px; border-radius: 50%;
+            font-size: 20px; cursor: pointer; box-shadow: 0 4px 0 #b45309; display: none;
+        }
     </style>
 </head>
 <body>
@@ -109,20 +105,20 @@
     <div id="welcome-modal" class="modal" style="display: flex;">
         <div class="modal-content">
             <h1>🔥 Campfire Masterclass</h1>
-            <p>Roast perfect marshmallows to unlock 3D Badges!</p>
+            <p>Roast perfect marshmallows for the crew! Progress saves automatically.</p>
             <div style="text-align: left; background: #fef3c7; padding: 20px; border-radius: 20px; margin: 20px 0; font-size: 14px;">
                 👶 <strong>Tom:</strong> Find the Start (Height at 0).<br>
                 🫠 <strong>Gary:</strong> Find the Peak Time (Vertex).<br>
                 🪨 <strong>Carl:</strong> Find the Crunchy Rock (Root).<br>
-                🧐 <strong>Peter:</strong> Answer his time/squish challenges.
+                🧐 <strong>Peter:</strong> Answer his time or squish challenges.
             </div>
-            <button class="btn" onclick="startGame()">Grab a Stick!</button>
+            <button class="btn" onclick="startGame()">Start Roasting!</button>
         </div>
     </div>
 
     <div id="review-modal" class="modal">
         <div class="modal-content">
-            <h2 id="review-title">Chef's Feedback 👨‍🍳</h2>
+            <h2 id="review-title">Dinner is Served! 👨‍🍳</h2>
             <div id="review-list" style="margin: 20px 0; text-align: left;"></div>
             <button class="btn" id="next-btn" onclick="nextRound()">Next Round!</button>
         </div>
@@ -152,17 +148,20 @@
             </div>
 
             <div class="clue-container">
-                <div class="clue-box">Recipe<div id="eq-std" style="font-weight:bold; color:var(--accent);"></div></div>
-                <div class="clue-box">Factored<div id="eq-fac" style="font-weight:bold; color:var(--blue);"></div></div>
-                <div class="clue-box" id="box-table">Fire Table<div class="table-wrap"><table id="math-table"></table></div></div>
+                <div class="clue-box" id="box-std">Recipe<div id="eq-std" style="font-weight:bold; color:var(--accent);"></div></div>
+                <div class="clue-box" id="box-fac">Factored<div id="eq-fac" style="font-weight:bold; color:var(--blue);"></div></div>
+                <div class="clue-box" id="box-table">Table<div style="overflow-x:auto;"><table id="math-table"></table></div></div>
             </div>
 
-            <div id="chart-wrapper"><canvas id="mathCanvas"></canvas></div>
+            <div id="chart-wrapper">
+                <button id="flashlight-btn" onclick="useFlashlight()" title="Flashlight Power-up!">🔦</button>
+                <canvas id="mathCanvas"></canvas>
+            </div>
 
             <div class="controls">
-                <div class="char-card"><span>👶</span><strong>Tom</strong><input type="range" id="sl-tom" value="0"><span id="v-tom">0</span></div>
-                <div class="char-card"><span>🫠</span><strong>Gary</strong><input type="range" id="sl-gary" step="0.5" value="0"><span id="v-gary">0</span></div>
-                <div class="char-card"><span>🪨</span><strong>Carl</strong><input type="range" id="sl-carl" step="0.5" value="0"><span id="v-carl">0</span></div>
+                <div class="char-card"><span>👶</span><strong>Tom</strong><input type="range" id="sl-tom"><span id="v-tom">0</span></div>
+                <div class="char-card"><span>🫠</span><strong>Gary</strong><input type="range" id="sl-gary" step="0.5"><span id="v-gary">0</span></div>
+                <div class="char-card"><span>🪨</span><strong>Carl</strong><input type="range" id="sl-carl" step="0.5"><span id="v-carl">0</span></div>
                 <div class="char-card"><span>🧐</span><strong>Peter</strong><div id="peter-bubble" style="font-size:10px; height:25px;"></div><input type="number" id="in-peter"></div>
             </div>
 
@@ -170,28 +169,28 @@
         </div>
 
         <div id="trophy-rack" class="sidebar">
-            <h3 style="margin:0 0 15px 0; text-align:center;">🏆 Trophy Rack</h3>
+            <h3 style="margin:0 0 15px 0; text-align:center;">🏆 Badge Rack</h3>
             <div class="badge-grid">
-                <div class="mini-badge" id="b-tom" title="Find Tom's Start 5 times">
-                    <span class="emoji">🐣</span><span class="label">Early<br>Bird</span>
+                <div class="mini-badge" id="b-tom" title="Early Bird: Find Tom 5 times">
+                    <span class="emoji">🐣</span><span class="label">Early Bird</span>
                 </div>
-                <div class="mini-badge" id="b-gary" title="Find Gary's Peak 5 times">
-                    <span class="emoji">🏅</span><span class="label">Peak<br>Master</span>
+                <div class="mini-badge" id="b-gary" title="Peak Master: Find Gary 5 times">
+                    <span class="emoji">🏅</span><span class="label">Peak Master</span>
                 </div>
-                <div class="mini-badge" id="b-carl" title="Find Carl's Rock 5 times">
-                    <span class="emoji">👺</span><span class="label">Rock<br>Star</span>
+                <div class="mini-badge" id="b-carl" title="Rock Star: Find Carl 5 times">
+                    <span class="emoji">👺</span><span class="label">Rock Star</span>
                 </div>
-                <div class="mini-badge" id="b-peter" title="Answer Peter 5 times">
-                    <span class="emoji">🔍</span><span class="label">Data<br>Detective</span>
+                <div class="mini-badge" id="b-peter" title="Data Detective: Answer Peter 5 times">
+                    <span class="emoji">🔍</span><span class="label">Data Detective</span>
                 </div>
-                <div class="mini-badge" id="b-smoke" title="Perfect in the Smoke (Round 6)">
-                    <span class="emoji">👻</span><span class="label">Ghost<br>Roaster</span>
+                <div class="mini-badge" id="b-smoke" title="Ghost Roaster: Perfect Round in Smoke">
+                    <span class="emoji">👻</span><span class="label">Ghost Roast</span>
                 </div>
-                <div class="mini-badge" id="b-midnight" title="Survived Round 10">
-                    <span class="emoji">🦇</span><span class="label">Midnight<br>Legend</span>
+                <div class="mini-badge" id="b-midnight" title="Midnight Legend: Survived Round 10">
+                    <span class="emoji">🦇</span><span class="label">Midnight</span>
                 </div>
-                <div class="mini-badge" id="b-streak" title="5 Perfect wins in a row">
-                    <span class="emoji">👑</span><span class="label">S'more<br>King</span>
+                <div class="mini-badge" id="b-streak" title="S'more King: 5 wins in a row">
+                    <span class="emoji">👑</span><span class="label">S'more King</span>
                 </div>
             </div>
         </div>
@@ -215,56 +214,70 @@
             }
         };
 
-        function saveGame() { localStorage.setItem('mallow_save_v2', JSON.stringify({ stats, streak })); }
-        function loadGame() {
-            const saved = localStorage.getItem('mallow_save_v2');
-            if (saved) {
-                const d = JSON.parse(saved); stats = d.stats; streak = d.streak;
-                document.getElementById('streak-text').textContent = "🔥 Streak: " + streak;
-                updateBadgeDisplay();
-            }
+        function startGame() { 
+            document.getElementById('welcome-modal').style.display='none'; 
+            const saved = localStorage.getItem('mallow_v3');
+            if(saved) { const d = JSON.parse(saved); stats = d.stats; streak = d.streak; updateBadges(); }
+            setup(); 
         }
-
-        function startGame() { document.getElementById('welcome-modal').style.display='none'; loadGame(); setup(); }
 
         function setup() {
             document.getElementById('btn-fire').disabled = false;
             const canvas = document.getElementById('mathCanvas');
-            canvas.className = ""; document.getElementById('box-table').classList.remove('hidden');
+            const boxT = document.getElementById('box-table');
+            const boxF = document.getElementById('box-fac');
+            
+            // RESET EVERYTHING
+            canvas.className = ""; 
+            boxT.style.display = "block"; 
+            boxF.style.display = "block";
             document.body.style.background = "var(--bg)";
+            document.getElementById('flashlight-btn').style.display = "none";
 
-            if (round === 6) canvas.classList.add("smoke-blur"), document.getElementById('box-table').classList.add('hidden');
-            if (round === 10) canvas.classList.add("midnight-mode"), document.getElementById('box-table').classList.add('hidden'), document.body.style.background="#0c0c0c";
+            // BOSS LOGIC
+            if(round === 6) {
+                canvas.classList.add("smoke-blur");
+                boxT.style.display = "none";
+                if(streak >= 3) document.getElementById('flashlight-btn').style.display = "block";
+            }
+            if(round === 10) {
+                canvas.classList.add("midnight-mode");
+                boxT.style.display = "none";
+                boxF.style.display = "none";
+                document.body.style.background = "#0c0c0c";
+            }
 
             let r1 = -Math.floor(Math.random()*4)-1, r2 = Math.floor(Math.random()*8)+4;
             let h = (r1+r2)/2, k = Math.pow(h-r1,2), yInt = -r1*r2, b = r1+r2;
-            
-            let randomX = Math.floor(Math.random()*r2);
-            let targetY = -1*(randomX-r1)*(randomX-r2);
-            current = { r1, r2, h, k, yInt, b, px: randomX, py: targetY };
-            current.peterMode = Math.random() > 0.5 ? 'x' : 'y';
+            let rx = Math.floor(Math.random()*r2);
+            current = { r1, r2, h, k, yInt, b, px: rx, py: -1*(rx-r1)*(rx-r2), mode: Math.random() > 0.5 ? 'x' : 'y' };
 
-            if (current.peterMode === 'y') {
-                document.getElementById('peter-bubble').textContent = `Squish at ${randomX}m?`;
-                document.getElementById('peter-sidebar-msg').textContent = `Find squishiness at ${randomX}m.`;
+            if(current.mode === 'y') {
+                document.getElementById('peter-bubble').textContent = `Squish at ${rx}m?`;
+                document.getElementById('peter-sidebar-msg').textContent = `Find squishiness at ${rx}m.`;
             } else {
-                document.getElementById('peter-bubble').textContent = `Time when squish is ${targetY}?`;
-                document.getElementById('peter-sidebar-msg').textContent = `Find a minute when squish is ${targetY}.`;
+                document.getElementById('peter-bubble').textContent = `Time when squish is ${current.py}?`;
+                document.getElementById('peter-sidebar-msg').textContent = `Find minute when squish is ${current.py}.`;
             }
 
             document.getElementById('eq-std').textContent = `y = -x² ${b>=0?'+':'-'} ${Math.abs(b)}x + ${yInt}`;
-            document.getElementById('eq-fac').textContent = round === 10 ? '???' : `y = -(x + ${Math.abs(r1)})(x - ${r2})`;
+            document.getElementById('eq-fac').textContent = `y = -(x + ${Math.abs(r1)})(x - ${r2})`;
             
             let table = document.getElementById('math-table');
-            table.innerHTML = `<tr><th>minutes (x)</th>${Array.from({length:r2+1},(_,i)=>`<td>${i}</td>`).join('')}</tr>`;
-            table.innerHTML += `<tr><th>squish (y)</th>${Array.from({length:r2+1},(_,i)=>`<td>${-1*(i-r1)*(i-r2)}</td>`).join('')}</tr>`;
+            table.innerHTML = `<tr><th>min (x)</th>${Array.from({length:r2+1},(_,i)=>`<td>${i}</td>`).join('')}</tr>`;
+            table.innerHTML += `<tr><th>sq (y)</th>${Array.from({length:r2+1},(_,i)=>`<td>${-1*(i-r1)*(i-r2)}</td>`).join('')}</tr>`;
 
             document.getElementById('round-text').textContent = `Round: ${round} / 10`;
-            document.getElementById('sl-tom').max = Math.ceil(k + 5);
-            document.getElementById('sl-gary').max = r2 + 2;
-            document.getElementById('sl-carl').max = r2 + 2;
+            document.getElementById('sl-tom').max = Math.ceil(k+5);
+            document.getElementById('sl-gary').max = r2+2;
+            document.getElementById('sl-carl').max = r2+2;
+            initChart(r2+2, k+5); update();
+        }
 
-            initChart(r2 + 2, k + 5); update();
+        function useFlashlight() {
+            document.getElementById('mathCanvas').className = "";
+            document.getElementById('flashlight-btn').style.display = "none";
+            setTimeout(() => { if(round === 6) document.getElementById('mathCanvas').classList.add("smoke-blur"); }, 5000);
         }
 
         function initChart(mX, mY) {
@@ -296,35 +309,35 @@
             const ty = parseInt(document.getElementById('sl-tom').value);
             const gx = parseFloat(document.getElementById('sl-gary').value);
             const cx = parseFloat(document.getElementById('sl-carl').value);
-            const pIn = parseFloat(document.getElementById('in-peter').value);
+            const pI = parseFloat(document.getElementById('in-peter').value);
 
             let tW = ty === current.yInt, gW = gx === current.h, cW = cx === current.r2, pW = false;
-            if (!isNaN(pIn)) pW = (current.peterMode === 'y' ? pIn === current.py : (-1*(pIn-current.r1)*(pIn-current.r2)) === current.py);
+            if(!isNaN(pI)) pW = (current.mode === 'y' ? pI === current.py : (-1*(pI-current.r1)*(pI-current.r2)) === current.py);
 
             if(tW) stats.tom++; if(gW) stats.gary++; if(cW) stats.carl++; if(pW) stats.peter++;
-            let perf = tW && gW && cW;
-            if(perf) { streak++; if(round === 6) stats.smokeWin = true; if(round === 10) stats.midnightWin = true; } else streak = 0;
+            let p = tW && gW && cW;
+            if(p) { streak++; if(round === 6) stats.smokeWin = true; if(round === 10) stats.midnightWin = true; } else streak = 0;
 
-            updateBadgeDisplay(); saveGame();
+            updateBadges(); localStorage.setItem('mallow_v3', JSON.stringify({stats, streak}));
 
             document.getElementById('review-list').innerHTML = `
                 <div class="feedback-item ${tW ? 'perfect' : 'wrong'}"><b>👶 Tom:</b> ${tW ? 'Perfect!' : (ty > current.yInt ? 'Too squishy!' : 'Too hard!')}</div>
-                <div class="feedback-item ${gW ? 'perfect' : 'wrong'}"><b>🫠 Gary:</b> ${gW ? 'Ultimate Goo!' : (gx > current.h ? 'Too long!' : 'Not long enough!')}</div>
-                <div class="feedback-item ${cW ? 'perfect' : 'wrong'}"><b>🪨 Carl:</b> ${cW ? 'Crunchy Rock!' : (cx > current.r2 ? 'Too long!' : 'Not long enough!')}</div>
-                <div class="feedback-item ${pW ? 'perfect' : 'wrong'}"><b>🧐 Peter:</b> ${pW ? 'Nice data!' : 'Wrong number!'}</div>`;
+                <div class="feedback-item ${gW ? 'perfect' : 'wrong'}"><b>🫠 Gary:</b> ${gW ? 'Gooey!' : 'Wrong time!'}</div>
+                <div class="feedback-item ${cW ? 'perfect' : 'wrong'}"><b>🪨 Carl:</b> ${cW ? 'Rock!' : 'Still soft!'}</div>
+                <div class="feedback-item ${pW ? 'perfect' : 'wrong'}"><b>🧐 Peter:</b> ${pW ? 'Nice!' : 'Wrong!'}</div>`;
             
             document.getElementById('streak-text').textContent = "🔥 Streak: " + streak;
             setTimeout(()=> document.getElementById('review-modal').style.display='flex', 1200);
         }
 
-        function updateBadgeDisplay() {
-            if (stats.tom >= 5) document.getElementById('b-tom').classList.add('unlocked');
-            if (stats.gary >= 5) document.getElementById('b-gary').classList.add('unlocked');
-            if (stats.carl >= 5) document.getElementById('b-carl').classList.add('unlocked');
-            if (stats.peter >= 5) document.getElementById('b-peter').classList.add('unlocked');
-            if (stats.smokeWin) document.getElementById('b-smoke').classList.add('unlocked');
-            if (stats.midnightWin) document.getElementById('b-midnight').classList.add('unlocked');
-            if (streak >= 5) document.getElementById('b-streak').classList.add('unlocked');
+        function updateBadges() {
+            if(stats.tom >= 5) document.getElementById('b-tom').classList.add('unlocked');
+            if(stats.gary >= 5) document.getElementById('b-gary').classList.add('unlocked');
+            if(stats.carl >= 5) document.getElementById('b-carl').classList.add('unlocked');
+            if(stats.peter >= 5) document.getElementById('b-peter').classList.add('unlocked');
+            if(stats.smokeWin) document.getElementById('b-smoke').classList.add('unlocked');
+            if(stats.midnightWin) document.getElementById('b-midnight').classList.add('unlocked');
+            if(streak >= 5) document.getElementById('b-streak').classList.add('unlocked');
         }
 
         function nextRound() { round = (round === 10) ? 1 : round + 1; document.getElementById('review-modal').style.display='none'; setup(); }
