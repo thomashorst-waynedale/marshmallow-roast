@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marshmallow Masterclass: Advanced Gameplay</title>
+    <title>Marshmallow Masterclass: Live Badges</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -19,169 +19,187 @@
 
         #main-layout {
             display: grid;
-            grid-template-columns: 260px 1fr;
-            gap: 20px;
-            max-width: 1200px;
+            grid-template-columns: 220px 1fr 220px;
+            gap: 15px;
+            max-width: 1300px;
             width: 100%;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 1100px) {
             #main-layout { grid-template-columns: 1fr; }
-            #wishlist { position: static; }
+            #wishlist, #trophy-rack { position: static; }
         }
 
-        #wishlist {
-            background: #fffbeb; padding: 20px; border-radius: 30px;
+        /* Sidebars */
+        .sidebar {
+            background: #fffbeb; padding: 15px; border-radius: 30px;
             border: 3px solid #fde68a; box-shadow: 0 8px 0 #eee8d5;
             height: fit-content; position: sticky; top: 10px;
         }
 
         .wish-item {
-            margin-bottom: 15px; padding: 12px; border-radius: 15px;
-            background: white; border-left: 6px solid var(--accent); font-size: 13px;
+            margin-bottom: 12px; padding: 10px; border-radius: 15px;
+            background: white; border-left: 6px solid var(--accent); font-size: 12px;
         }
-        .wish-item h4 { margin: 0 0 5px 0; font-size: 15px; }
+        .wish-item h4 { margin: 0 0 3px 0; font-size: 14px; }
 
+        /* 3D Badge Rack (Right Side) */
+        .badge-grid {
+            display: grid; grid-template-columns: 1fr; gap: 15px; perspective: 800px;
+        }
+
+        .mini-badge {
+            background: #fff; padding: 10px; border-radius: 15px;
+            display: flex; align-items: center; gap: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: rotateY(-15deg); transition: 0.5s;
+            filter: grayscale(1); opacity: 0.3; border: 2px solid #ddd;
+        }
+
+        .mini-badge.unlocked {
+            filter: grayscale(0); opacity: 1; border-color: var(--gold);
+            transform: rotateY(0deg); box-shadow: -5px 5px 15px rgba(245,158,11,0.3);
+            background: linear-gradient(135deg, #fff 0%, #fffbeb 100%);
+        }
+
+        .mini-badge:hover { transform: scale(1.05) translateZ(20px); z-index: 10; }
+        .mini-badge .emoji { font-size: 24px; }
+        .mini-badge .label { font-size: 10px; font-weight: bold; line-height: 1.1; }
+
+        /* Game Board */
         #game-board {
             background: white; padding: 25px; border-radius: 40px;
-            box-shadow: 0 15px 0 #eee8d5; width: 100%; position: relative;
-            box-sizing: border-box;
+            box-shadow: 0 15px 0 #eee8d5; width: 100%; box-sizing: border-box;
         }
 
-        .smoke-blur { filter: blur(15px) grayscale(0.9); }
-        .midnight-mode { filter: brightness(0.05); }
-        .hidden { display: none !important; }
-
-        #chart-wrapper { height: 380px; background: white; border-radius: 20px; margin-bottom: 20px; border: 2px solid #e2e8f0; position: relative; overflow: hidden; }
-
-        .clue-container { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 15px; margin-bottom: 20px; }
-        .clue-box { background: #fef3c7; padding: 15px; border-radius: 20px; border: 1px solid #fde68a; overflow: hidden; }
+        #chart-wrapper { height: 350px; background: white; border-radius: 20px; margin-bottom: 20px; border: 2px solid #e2e8f0; position: relative; overflow: hidden; }
+        .clue-container { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 10px; margin-bottom: 20px; }
+        .clue-box { background: #fef3c7; padding: 12px; border-radius: 20px; border: 1px solid #fde68a; overflow: hidden; font-size: 13px; }
+        
         .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 5px; background: white; }
-        th, td { border: 1px solid #fed7aa; padding: 4px; text-align: center; }
+        th, td { border: 1px solid #fed7aa; padding: 5px; text-align: center; }
 
-        .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; background: #fafaf9; padding: 15px; border-radius: 25px; }
-        .char-card { display: flex; flex-direction: column; align-items: center; text-align: center; font-size: 12px; }
-        .char-icon { font-size: 35px; margin-bottom: 5px; }
+        .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: #fafaf9; padding: 15px; border-radius: 25px; }
+        .char-card { display: flex; flex-direction: column; align-items: center; text-align: center; font-size: 11px; }
         input[type=range] { width: 100%; cursor: pointer; accent-color: var(--accent); }
-        input[type=number] { width: 60px; padding: 8px; border-radius: 10px; border: 2px solid #ccc; text-align: center; font-size: 16px; }
+        input[type=number] { width: 55px; padding: 8px; border-radius: 10px; border: 2px solid #ccc; text-align: center; font-size: 15px; }
 
-        .badge-case { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 15px; }
-        .badge { font-size: 26px; filter: grayscale(1); opacity: 0.2; transition: 0.4s; cursor: help; }
-        .badge.unlocked { filter: grayscale(0); opacity: 1; transform: scale(1.1); }
-
+        /* Modals */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); display: flex; align-items: center;
-            justify-content: center; z-index: 1000; backdrop-filter: blur(8px);
+            justify-content: center; z-index: 1000; backdrop-filter: blur(8px); display: none;
         }
-        .modal-content { background: white; padding: 40px; border-radius: 35px; text-align: center; max-width: 600px; width: 90%; }
+        .modal-content { background: white; padding: 35px; border-radius: 35px; text-align: center; max-width: 600px; width: 95%; }
 
-        .btn { background: var(--accent); color: white; border: none; padding: 15px 40px; border-radius: 50px; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 6px 0 #ea580c; transition: 0.1s; margin-top: 20px;}
+        .btn { background: var(--accent); color: white; border: none; padding: 15px 40px; border-radius: 50px; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 6px 0 #ea580c; margin-top: 10px; }
         .btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #ea580c; }
         .btn:disabled { background: #ccc; box-shadow: 0 6px 0 #999; cursor: not-allowed; }
 
-        .feedback-item { margin-bottom: 12px; padding: 10px; border-radius: 10px; background: #f8fafc; border-left: 5px solid #ccc; }
-        .feedback-item.perfect { border-color: var(--success); background: #ecfdf5;}
-        .feedback-item.wrong { border-color: #ef4444; background: #fef2f2;}
+        .smoke-blur { filter: blur(15px) grayscale(0.9); }
+        .midnight-mode { filter: brightness(0.05); }
+        .feedback-item { margin-bottom: 10px; padding: 8px; border-radius: 10px; border-left: 5px solid #ccc; font-size: 14px; }
+        .perfect { border-color: var(--success); background: #ecfdf5; }
+        .wrong { border-color: #ef4444; background: #fef2f2; }
     </style>
 </head>
 <body>
 
-    <div id="welcome-modal" class="modal">
+    <div id="welcome-modal" class="modal" style="display: flex;">
         <div class="modal-content">
-            <h1>🔥 Meet the Campfire Crew!</h1>
-            <p>Your friends are hungry! Check the 📋 <strong>Wishlist</strong> on the left to see exactly how they want their marshmallows roasted.</p>
-            <div style="text-align: left; background: #fef3c7; padding: 20px; border-radius: 20px; margin: 20px 0; font-size: 15px;">
-                👶 <strong>Toddler Tom:</strong> Wants the starting squishiness.<br>
-                🫠 <strong>Gooey Gary:</strong> Wants that maximum gooey peak.<br>
-                🪨 <strong>Carbon Carl:</strong> Wants it toasted into a crunchy rock.<br>
-                🧐 <strong>Picky Peter:</strong> Wants a very specific squish level or time.
+            <h1>🔥 Campfire Masterclass</h1>
+            <p>Roast perfect marshmallows to unlock 3D Badges!</p>
+            <div style="text-align: left; background: #fef3c7; padding: 20px; border-radius: 20px; margin: 20px 0; font-size: 14px;">
+                👶 <strong>Tom:</strong> Find the Start (Height at 0).<br>
+                🫠 <strong>Gary:</strong> Find the Peak Time (Vertex).<br>
+                🪨 <strong>Carl:</strong> Find the Crunchy Rock (Root).<br>
+                🧐 <strong>Peter:</strong> Answer his time/squish challenges.
             </div>
-            <button class="btn" onclick="startGame()">Let's Roast! 🍢</button>
+            <button class="btn" onclick="startGame()">Grab a Stick!</button>
         </div>
     </div>
 
-    <div id="event-modal" class="modal" style="display:none;">
+    <div id="review-modal" class="modal">
         <div class="modal-content">
-            <h1 id="event-title">Warning!</h1>
-            <p id="event-text" style="font-size: 18px; line-height: 1.5;"></p>
-            <button class="btn" onclick="closeEventModal()">I'm Ready!</button>
-        </div>
-    </div>
-
-    <div id="review-modal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <h2 id="review-title">Dinner is Served! 👨‍🍳</h2>
-            <div id="review-list" style="margin: 20px 0; font-size: 16px; text-align: left;"></div>
+            <h2 id="review-title">Chef's Feedback 👨‍🍳</h2>
+            <div id="review-list" style="margin: 20px 0; text-align: left;"></div>
             <button class="btn" id="next-btn" onclick="nextRound()">Next Round!</button>
         </div>
     </div>
 
-    <div id="end-modal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <h1>🏆 Master Roaster!</h1>
-            <p style="font-size: 18px;">You survived all 10 rounds of the campfire. Look at all the badges you collected!</p>
-            <div id="final-badges" class="badge-case" style="background:none; border:none; margin: 30px 0;"></div>
-            <button class="btn" onclick="location.reload()">Play Again</button>
-        </div>
-    </div>
-
     <div id="main-layout">
-        <div id="wishlist">
-            <h3 style="margin-top:0; text-align:center;">📋 Wishlist</h3>
+        <div id="wishlist" class="sidebar">
+            <h3 style="margin:0 0 10px 0; text-align:center;">📋 Wishlist</h3>
             <div class="wish-item" style="border-left-color: #ff9800;">
-                <h4>👶 Toddler Tom</h4><p>Wants the <strong>Start Squish</strong> (height at Time 0).</p>
+                <h4>👶 Tom</h4><p>Wants the <strong>Start Squish</strong> (at Time 0).</p>
             </div>
             <div class="wish-item" style="border-left-color: #4db6ac;">
-                <h4>🫠 Gooey Gary</h4><p>Wants the <strong>Gooey Peak Time</strong> (top of the curve).</p>
+                <h4>🫠 Gary</h4><p>Wants the <strong>Max Gooey Time</strong> (The Peak).</p>
             </div>
             <div class="wish-item" style="border-left-color: #795548;">
-                <h4>🪨 Carbon Carl</h4><p>Wants the <strong>Burnt Rock Time</strong> (squish is 0).</p>
+                <h4>🪨 Carl</h4><p>Wants the <strong>Crunchy Rock</strong> (where squish is 0).</p>
             </div>
             <div class="wish-item" style="border-left-color: #9c27b0;">
-                <h4>🧐 Picky Peter</h4><p id="peter-sidebar-msg">Waiting for an order...</p>
+                <h4>🧐 Peter</h4><p id="peter-sidebar-msg">Waiting...</p>
             </div>
         </div>
 
         <div id="game-board">
-            <div class="badge-case" id="main-badge-case">
-                <span class="badge" id="b-tom" title="Early Bird: Find the Start 5 times">🐣</span>
-                <span class="badge" id="b-gary" title="Peak Master: Find the Peak 5 times">🏅</span>
-                <span class="badge" id="b-carl" title="Rock Star: Find the Burnt Rock 5 times">👺</span>
-                <span class="badge" id="b-peter" title="Friendship King: Listen to Peter 5 times">🔍</span>
-                <span class="badge" id="b-smoke" title="Ghost Roaster: Perfect Round in Smoke">👻</span>
-                <span class="badge" id="b-midnight" title="Midnight Legend: Survived Round 10">🦇</span>
-                <span class="badge" id="b-streak" title="S'more King: 5 Wins in a row">👑</span>
-            </div>
-
             <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:10px;">
                 <div id="round-text">Round: 1 / 10</div>
                 <div id="streak-text" style="color:var(--accent);">🔥 Streak: 0</div>
             </div>
 
             <div class="clue-container">
-                <div class="clue-box" id="box-std">Standard Recipe<div id="eq-std" style="font-weight:bold; color:var(--accent); font-size:16px;"></div></div>
-                <div class="clue-box" id="box-fac">Factored Recipe<div id="eq-fac" style="font-weight:bold; color:var(--blue); font-size:16px;"></div></div>
+                <div class="clue-box">Recipe<div id="eq-std" style="font-weight:bold; color:var(--accent);"></div></div>
+                <div class="clue-box">Factored<div id="eq-fac" style="font-weight:bold; color:var(--blue);"></div></div>
                 <div class="clue-box" id="box-table">Fire Table<div class="table-wrap"><table id="math-table"></table></div></div>
             </div>
 
             <div id="chart-wrapper"><canvas id="mathCanvas"></canvas></div>
 
             <div class="controls">
-                <div class="char-card"><span class="char-icon">👶</span><strong>Tom</strong><input type="range" id="sl-tom" min="0" value="0"><span id="v-tom">0</span></div>
-                <div class="char-card"><span class="char-icon">🫠</span><strong>Gary</strong><input type="range" id="sl-gary" min="0" step="0.5" value="0"><span id="v-gary">0</span></div>
-                <div class="char-card"><span class="char-icon">🪨</span><strong>Carl</strong><input type="range" id="sl-carl" min="0" step="0.5" value="0"><span id="v-carl">0</span></div>
-                <div class="char-card"><span class="char-icon">🧐</span><strong>Peter</strong><div id="peter-bubble" style="font-size:11px; height:30px; margin-top:5px; color:#666;"></div><input type="number" id="in-peter" placeholder="?"></div>
+                <div class="char-card"><span>👶</span><strong>Tom</strong><input type="range" id="sl-tom" value="0"><span id="v-tom">0</span></div>
+                <div class="char-card"><span>🫠</span><strong>Gary</strong><input type="range" id="sl-gary" step="0.5" value="0"><span id="v-gary">0</span></div>
+                <div class="char-card"><span>🪨</span><strong>Carl</strong><input type="range" id="sl-carl" step="0.5" value="0"><span id="v-carl">0</span></div>
+                <div class="char-card"><span>🧐</span><strong>Peter</strong><div id="peter-bubble" style="font-size:10px; height:25px;"></div><input type="number" id="in-peter"></div>
             </div>
 
             <center><button class="btn" id="btn-fire" onclick="serve()">Light the Fire! 🔥</button></center>
+        </div>
+
+        <div id="trophy-rack" class="sidebar">
+            <h3 style="margin:0 0 15px 0; text-align:center;">🏆 Trophy Rack</h3>
+            <div class="badge-grid">
+                <div class="mini-badge" id="b-tom" title="Find Tom's Start 5 times">
+                    <span class="emoji">🐣</span><span class="label">Early<br>Bird</span>
+                </div>
+                <div class="mini-badge" id="b-gary" title="Find Gary's Peak 5 times">
+                    <span class="emoji">🏅</span><span class="label">Peak<br>Master</span>
+                </div>
+                <div class="mini-badge" id="b-carl" title="Find Carl's Rock 5 times">
+                    <span class="emoji">👺</span><span class="label">Rock<br>Star</span>
+                </div>
+                <div class="mini-badge" id="b-peter" title="Answer Peter 5 times">
+                    <span class="emoji">🔍</span><span class="label">Data<br>Detective</span>
+                </div>
+                <div class="mini-badge" id="b-smoke" title="Perfect in the Smoke (Round 6)">
+                    <span class="emoji">👻</span><span class="label">Ghost<br>Roaster</span>
+                </div>
+                <div class="mini-badge" id="b-midnight" title="Survived Round 10">
+                    <span class="emoji">🦇</span><span class="label">Midnight<br>Legend</span>
+                </div>
+                <div class="mini-badge" id="b-streak" title="5 Perfect wins in a row">
+                    <span class="emoji">👑</span><span class="label">S'more<br>King</span>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         let round = 1, streak = 0, current = {}, chart = null;
-        let counters = { tom:0, gary:0, carl:0, peter:0 };
+        let stats = { tom:0, gary:0, carl:0, peter:0, smokeWin:false, midnightWin:false };
 
         const emojiPlugin = {
             id: 'emojiPlugin',
@@ -191,84 +209,62 @@
                     const meta = chart.getDatasetMeta(i);
                     if (meta.data.length > 0) {
                         const pt = meta.data[0];
-                        ctx.font = '35px Arial'; ctx.textAlign = 'center'; ctx.fillText(emojis[i], pt.x, pt.y);
+                        ctx.font = '30px Arial'; ctx.textAlign = 'center'; ctx.fillText(emojis[i], pt.x, pt.y);
                     }
                 }
             }
         };
 
-        function startGame() { document.getElementById('welcome-modal').style.display='none'; setup(); }
-
-        function showEventModal(title, text) {
-            document.getElementById('event-title').innerHTML = title;
-            document.getElementById('event-text').innerHTML = text;
-            document.getElementById('event-modal').style.display = 'flex';
+        function saveGame() { localStorage.setItem('mallow_save_v2', JSON.stringify({ stats, streak })); }
+        function loadGame() {
+            const saved = localStorage.getItem('mallow_save_v2');
+            if (saved) {
+                const d = JSON.parse(saved); stats = d.stats; streak = d.streak;
+                document.getElementById('streak-text').textContent = "🔥 Streak: " + streak;
+                updateBadgeDisplay();
+            }
         }
 
-        function closeEventModal() {
-            document.getElementById('event-modal').style.display = 'none';
-            setup();
-        }
+        function startGame() { document.getElementById('welcome-modal').style.display='none'; loadGame(); setup(); }
 
         function setup() {
             document.getElementById('btn-fire').disabled = false;
-            document.getElementById('sl-tom').value = 0;
-            document.getElementById('sl-gary').value = 0;
-            document.getElementById('sl-carl').value = 0;
-            document.getElementById('in-peter').value = '';
-
             const canvas = document.getElementById('mathCanvas');
-            const tableBox = document.getElementById('box-table');
-            const factBox = document.getElementById('box-fac');
-            
-            canvas.className = ""; tableBox.classList.remove('hidden'); factBox.classList.remove('hidden');
+            canvas.className = ""; document.getElementById('box-table').classList.remove('hidden');
             document.body.style.background = "var(--bg)";
 
-            if(round === 6) { 
-                canvas.classList.add("smoke-blur"); 
-                tableBox.classList.add("hidden"); 
-            }
-            if(round === 10) { 
-                canvas.classList.add("midnight-mode"); 
-                tableBox.classList.add("hidden"); 
-                factBox.classList.add("hidden"); 
-                document.body.style.background="#0c0c0c"; 
-            }
+            if (round === 6) canvas.classList.add("smoke-blur"), document.getElementById('box-table').classList.add('hidden');
+            if (round === 10) canvas.classList.add("midnight-mode"), document.getElementById('box-table').classList.add('hidden'), document.body.style.background="#0c0c0c";
 
             let r1 = -Math.floor(Math.random()*4)-1, r2 = Math.floor(Math.random()*8)+4;
             let h = (r1+r2)/2, k = Math.pow(h-r1,2), yInt = -r1*r2, b = r1+r2;
-            current = { r1, r2, h, k, yInt, b };
-
-            // Picky Peter Logic (50/50 chance to ask for X or Y)
-            let randomX = Math.floor(Math.random()*(r2)); 
-            let targetY = -1*(randomX-r1)*(randomX-r2);
-            current.peterMode = Math.floor(Math.random() * 2); // 0 = Ask Y, 1 = Ask X
             
-            if (current.peterMode === 0) {
-                document.getElementById('peter-bubble').textContent = `What's the squish at ${randomX}s?`;
-                document.getElementById('peter-sidebar-msg').textContent = `Peter wants to know the squishiness at exactly ${randomX} seconds.`;
-                current.peterGoalY = targetY; // We will check if their input matches targetY
+            let randomX = Math.floor(Math.random()*r2);
+            let targetY = -1*(randomX-r1)*(randomX-r2);
+            current = { r1, r2, h, k, yInt, b, px: randomX, py: targetY };
+            current.peterMode = Math.random() > 0.5 ? 'x' : 'y';
+
+            if (current.peterMode === 'y') {
+                document.getElementById('peter-bubble').textContent = `Squish at ${randomX}m?`;
+                document.getElementById('peter-sidebar-msg').textContent = `Find squishiness at ${randomX}m.`;
             } else {
-                document.getElementById('peter-bubble').textContent = `When is the squish exactly ${targetY}?`;
-                document.getElementById('peter-sidebar-msg').textContent = `Peter wants to know what time the squish is ${targetY}. (There might be two correct times!)`;
-                current.peterGoalY = targetY; // We will plug their inputted X into the equation and see if it equals this targetY
+                document.getElementById('peter-bubble').textContent = `Time when squish is ${targetY}?`;
+                document.getElementById('peter-sidebar-msg').textContent = `Find a minute when squish is ${targetY}.`;
             }
 
             document.getElementById('eq-std').textContent = `y = -x² ${b>=0?'+':'-'} ${Math.abs(b)}x + ${yInt}`;
-            document.getElementById('eq-fac').textContent = `y = -(x + ${Math.abs(r1)})(x - ${r2})`;
-
+            document.getElementById('eq-fac').textContent = round === 10 ? '???' : `y = -(x + ${Math.abs(r1)})(x - ${r2})`;
+            
             let table = document.getElementById('math-table');
-            table.innerHTML = `<tr><th>x</th>${Array.from({length:r2+1},(_,i)=>`<td>${i}</td>`).join('')}</tr>`;
-            table.innerHTML += `<tr><th>y</th>${Array.from({length:r2+1},(_,i)=>`<td>${-1*(i-r1)*(i-r2)}</td>`).join('')}</tr>`;
+            table.innerHTML = `<tr><th>minutes (x)</th>${Array.from({length:r2+1},(_,i)=>`<td>${i}</td>`).join('')}</tr>`;
+            table.innerHTML += `<tr><th>squish (y)</th>${Array.from({length:r2+1},(_,i)=>`<td>${-1*(i-r1)*(i-r2)}</td>`).join('')}</tr>`;
 
             document.getElementById('round-text').textContent = `Round: ${round} / 10`;
-
             document.getElementById('sl-tom').max = Math.ceil(k + 5);
             document.getElementById('sl-gary').max = r2 + 2;
             document.getElementById('sl-carl').max = r2 + 2;
 
-            initChart(r2 + 2, k + 5); 
-            update();
+            initChart(r2 + 2, k + 5); update();
         }
 
         function initChart(mX, mY) {
@@ -277,10 +273,7 @@
             chart = new Chart(ctx, {
                 type: 'scatter', plugins: [emojiPlugin],
                 data: { datasets: [ {data:[{x:0,y:0}]}, {data:[{x:0,y:0}]}, {data:[{x:0,y:0}]}, {data:[], type:'line', borderColor:'#f97316', borderWidth:5, pointRadius:0} ]},
-                options: { 
-                    responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, 
-                    scales:{ x:{min:0, max:mX}, y:{min:0, max:mY} } 
-                }
+                options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{min:0, max:mX}, y:{min:0, max:mY}} }
             });
         }
 
@@ -292,88 +285,49 @@
             chart.data.datasets[1].data[0] = {x:gx, y:current.k};
             chart.data.datasets[2].data[0] = {x:cx, y:0};
             chart.update();
-            document.getElementById('v-tom').textContent = ty; 
-            document.getElementById('v-gary').textContent = gx; 
-            document.getElementById('v-carl').textContent = cx;
+            document.getElementById('v-tom').textContent = ty; document.getElementById('v-gary').textContent = gx; document.getElementById('v-carl').textContent = cx;
         }
 
         function serve() {
             document.getElementById('btn-fire').disabled = true;
-
             const curve = []; for(let x=0; x<=current.r2+0.1; x+=0.1) curve.push({x, y: -1*(x-current.r1)*(x-current.r2)});
             chart.data.datasets[3].data = curve; chart.update();
 
             const ty = parseInt(document.getElementById('sl-tom').value);
             const gx = parseFloat(document.getElementById('sl-gary').value);
             const cx = parseFloat(document.getElementById('sl-carl').value);
-            const pInput = parseFloat(document.getElementById('in-peter').value);
+            const pIn = parseFloat(document.getElementById('in-peter').value);
 
-            let tW = ty === current.yInt;
-            let gW = gx === current.h;
-            let cW = cx === current.r2;
-            let pW = false;
+            let tW = ty === current.yInt, gW = gx === current.h, cW = cx === current.r2, pW = false;
+            if (!isNaN(pIn)) pW = (current.peterMode === 'y' ? pIn === current.py : (-1*(pIn-current.r1)*(pIn-current.r2)) === current.py);
 
-            if (!isNaN(pInput)) {
-                if (current.peterMode === 0) {
-                    pW = (pInput === current.peterGoalY); // Checking if inputted Y matches
-                } else {
-                    let testY = -1 * (pInput - current.r1) * (pInput - current.r2);
-                    pW = (testY === current.peterGoalY); // Checking if inputted X produces the target Y
-                }
-            }
+            if(tW) stats.tom++; if(gW) stats.gary++; if(cW) stats.carl++; if(pW) stats.peter++;
+            let perf = tW && gW && cW;
+            if(perf) { streak++; if(round === 6) stats.smokeWin = true; if(round === 10) stats.midnightWin = true; } else streak = 0;
 
-            if(tW) counters.tom++; if(gW) counters.gary++; if(cW) counters.carl++; if(pW) counters.peter++;
-            let perfect = tW && gW && cW;
-            if(perfect) streak++; else streak = 0;
-
-            if(counters.tom >= 5) document.getElementById('b-tom').classList.add('unlocked');
-            if(counters.gary >= 5) document.getElementById('b-gary').classList.add('unlocked');
-            if(counters.carl >= 5) document.getElementById('b-carl').classList.add('unlocked');
-            if(counters.peter >= 5) document.getElementById('b-peter').classList.add('unlocked');
-            if(perfect && round === 6) document.getElementById('b-smoke').classList.add('unlocked');
-            if(perfect && round === 10) document.getElementById('b-midnight').classList.add('unlocked');
-            if(streak >= 5) document.getElementById('b-streak').classList.add('unlocked');
-
-            let tomFb = tW ? "Perfect start! 🍼" : (ty > current.yInt ? "Too squishy! 🤢" : "Not squishy enough! 🧱");
-            let garyFb = gW ? "Ultimate Goo! 🫠" : (gx > current.h ? "Too much time! 🔥" : "Not enough time! 🧊");
-            let carlFb = cW ? "Crunchy Rock! 🪨" : (cx > current.r2 ? "Too much time! 🌋" : "Not enough time! ☁️");
-            let peterFb = pW ? "You got it! 🧐" : "That's not what he wanted! ❌";
+            updateBadgeDisplay(); saveGame();
 
             document.getElementById('review-list').innerHTML = `
-                <div class="feedback-item ${tW ? 'perfect' : 'wrong'}"><b>👶 Tom:</b> ${tomFb}</div>
-                <div class="feedback-item ${gW ? 'perfect' : 'wrong'}"><b>🫠 Gary:</b> ${garyFb}</div>
-                <div class="feedback-item ${cW ? 'perfect' : 'wrong'}"><b>🪨 Carl:</b> ${carlFb}</div>
-                <div class="feedback-item ${pW ? 'perfect' : 'wrong'}"><b>🧐 Peter:</b> ${peterFb}</div>
-            `;
+                <div class="feedback-item ${tW ? 'perfect' : 'wrong'}"><b>👶 Tom:</b> ${tW ? 'Perfect!' : (ty > current.yInt ? 'Too squishy!' : 'Too hard!')}</div>
+                <div class="feedback-item ${gW ? 'perfect' : 'wrong'}"><b>🫠 Gary:</b> ${gW ? 'Ultimate Goo!' : (gx > current.h ? 'Too long!' : 'Not long enough!')}</div>
+                <div class="feedback-item ${cW ? 'perfect' : 'wrong'}"><b>🪨 Carl:</b> ${cW ? 'Crunchy Rock!' : (cx > current.r2 ? 'Too long!' : 'Not long enough!')}</div>
+                <div class="feedback-item ${pW ? 'perfect' : 'wrong'}"><b>🧐 Peter:</b> ${pW ? 'Nice data!' : 'Wrong number!'}</div>`;
             
             document.getElementById('streak-text').textContent = "🔥 Streak: " + streak;
-            
-            if(round === 10) {
-                document.getElementById('next-btn').textContent = "Finish Game!";
-            } else {
-                document.getElementById('next-btn').textContent = "Next Round!";
-            }
-
             setTimeout(()=> document.getElementById('review-modal').style.display='flex', 1200);
         }
 
-        function nextRound() { 
-            round++; 
-            document.getElementById('review-modal').style.display='none'; 
-            
-            if (round === 6) {
-                showEventModal("💨 The Wind is Picking Up!", "The smoke is blowing in! For <strong>this round only</strong>, the table is hidden and the graph is blurry.");
-            } else if (round === 10) {
-                showEventModal("🦇 Midnight Roast (Final Round!)", "It's pitch black out here! The table and Factored recipe are gone. Survive this final round to become a legend!");
-            } else if (round > 10) {
-                document.getElementById('main-layout').style.display = 'none';
-                document.getElementById('final-badges').innerHTML = document.getElementById('main-badge-case').innerHTML;
-                document.getElementById('end-modal').style.display = 'flex';
-                return;
-            } else {
-                setup(); 
-            }
+        function updateBadgeDisplay() {
+            if (stats.tom >= 5) document.getElementById('b-tom').classList.add('unlocked');
+            if (stats.gary >= 5) document.getElementById('b-gary').classList.add('unlocked');
+            if (stats.carl >= 5) document.getElementById('b-carl').classList.add('unlocked');
+            if (stats.peter >= 5) document.getElementById('b-peter').classList.add('unlocked');
+            if (stats.smokeWin) document.getElementById('b-smoke').classList.add('unlocked');
+            if (stats.midnightWin) document.getElementById('b-midnight').classList.add('unlocked');
+            if (streak >= 5) document.getElementById('b-streak').classList.add('unlocked');
         }
+
+        function nextRound() { round = (round === 10) ? 1 : round + 1; document.getElementById('review-modal').style.display='none'; setup(); }
 
         ['sl-tom', 'sl-gary', 'sl-carl'].forEach(id => document.getElementById(id).addEventListener('input', update));
     </script>
